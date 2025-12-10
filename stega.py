@@ -2,7 +2,8 @@ from PIL import Image
 import numpy as np
 import random
 import sys
-
+from pathlib import Path
+import os
 def split_into_blocks(img_array, size):
     """
     Разбивает множество пикселей на блоки размерами size x size
@@ -170,8 +171,14 @@ def hide(image, data, save_place, size, seed = None):
     key = ';'.join(key_parts) #объединяем в один ключ
     reconstructed = reconstruct_from_blocks(encoded_blocks, positions, img_array.shape, size) #объединяем блоки в изображение
     encoded_img = Image.fromarray(reconstructed) #создаем изображение из массива
-    encoded_img.save(save_place) #сохраняем
-    with open('key.txt', 'w', encoding='utf-8') as f:
+    save_place = os.path.normpath(save_place)
+    # Создаём папку, если её нет
+    os.makedirs(os.path.dirname(save_place), exist_ok=True)
+    # Сохраняем изображение
+    encoded_img.save(save_place)
+    key_dir = os.path.dirname(save_place)
+    key_path = os.path.join(key_dir, 'key.txt')
+    with open(key_path, 'w', encoding='utf-8') as f:
         f.write(key)
     return save_place
 
@@ -183,6 +190,7 @@ def seek(encoded_image, key, size):
     :param size: размер блоков
     :return:
     """
+    encoded_image = os.path.normpath(encoded_image)
     img = Image.open(encoded_image)
     img_array = np.array(img)
     blocks, positions = split_into_blocks(img_array, size)
@@ -293,6 +301,7 @@ if __name__ == "__main__":
             size = int(sys.argv[4])
 
             # Читаем ключ из файла и передаём в seek
+            key_file = os.path.normpath(key_file)
             with open(key_file, 'r', encoding='utf-8') as f:
                 key = f.read()
 
