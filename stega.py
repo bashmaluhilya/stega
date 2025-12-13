@@ -140,7 +140,6 @@ def hide(image, data, save_place, size, seed = None):
 
         if bit_index == 0:
             print(f"Первые 8 бит: {hide_data[:8]}")
-            print(f"Битовая строка для 'hello':")
             for i, char in enumerate(data):
                 bits = format(ord(char), '08b')
                 print(f"  '{char}' ({ord(char):3d}): {bits}")
@@ -230,9 +229,6 @@ def seek(encoded_image, key, size):
             y, x, ch = map(int, pos_pair.split(',')) #разбиваем строки на составляющие
             random_positions.append((y, x, ch))
 
-        if len(random_positions) != n:
-            print(f"Предупреждение: блок {idx} - позиций {len(random_positions)}, ожидалось {n}")
-
         for i in range(min(n, len(random_positions))): #запускает цикл по минимальному значению
             pos_y, pos_x, pos_ch = random_positions[i]
 
@@ -244,15 +240,9 @@ def seek(encoded_image, key, size):
             bit = pixel_value & 1 #извлекаем младший бит через битовую энд и маску 00000001
             extracted_bits.append(str(bit)) #добавляет бит в список
 
-            if len(extracted_bits) <= 5:
-                print(f"Блок {idx}, позиция {pos_y},{pos_x},{pos_ch}: "
-                      f"значение={pixel_value}, LSB={bit}")
 
     bits_str = ''.join(extracted_bits) # собираем битовую строку
     print(f"\nВсего извлечено бит: {len(bits_str)}")
-
-    if len(bits_str) < 40:
-        print(f"Ошибка: недостаточно бит ({len(bits_str)}) для 5 символов")
 
     result_chars = []
     for i in range(0, len(bits_str), 8):
@@ -269,17 +259,20 @@ def seek(encoded_image, key, size):
     return result
 
 if __name__ == "__main__":
+    """
+    Функция запускает программу и обрабатывает ошибки
+    """
     if len(sys.argv) == 1:
-        print("Скрыть: python stega.py hide <image> <текст> <выходной_файл> <размер_блока> [seed]")
+        print("Скрыть: python stega.py hide <изображение> <текст> <выходной_файл> <размер_блока> [seed]")
         print("Найти:  python stega.py seek <изображение> <ключ.txt> <размер_блока>")
         sys.exit()
 
     mode = sys.argv[1] #проверяем режим работы
-
+    allowed_formats = ['PNG', 'BMP']
     try:
         if mode == "hide":
             if len(sys.argv) < 6:
-                raise ValueError("Нужно: hide <image> <текст> <output> <block_size> [seed]")
+                raise ValueError("Нужно: hide <изображение> <текст> <выходной_файл> <размер_блока> [seed]")
 
             img = sys.argv[2]
             data = sys.argv[3]
@@ -288,18 +281,16 @@ if __name__ == "__main__":
 
             # Обработка необязательного параметра seed
             seed = int(sys.argv[6]) if len(sys.argv) > 6 else None
-
             result_path = hide(img, data, output, size, seed)
-            print(f"\n✓ Готово! Изображение сохранено: {result_path}")
+            print(f"\n Готово! Изображение сохранено: {result_path}")
 
         elif mode == "seek":
             if len(sys.argv) < 5:
-                raise ValueError("Нужно: seek <image> <key.txt> <block_size>")
+                raise ValueError("Нужно: seek <изображение> <ключ.txt> <размер блока>")
 
             img = sys.argv[2]
             key_file = sys.argv[3]
             size = int(sys.argv[4])
-
             # Читаем ключ из файла и передаём в seek
             key_file = os.path.normpath(key_file)
             with open(key_file, 'r', encoding='utf-8') as f:
